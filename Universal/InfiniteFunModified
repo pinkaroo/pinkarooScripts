@@ -6422,7 +6422,7 @@ local TeleportCheck = false
 Players.LocalPlayer.OnTeleport:Connect(function(State)
 	if KeepInfYield and (not TeleportCheck) and queueteleport then
 		TeleportCheck = true
-		queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/Xane123/InfiniteFun_IY/master/source'))()")
+		queueteleport("loadstring(game:HttpGet("https://raw.githubusercontent.com/pinkaroo/pinkarooScripts/refs/heads/main/Universal/InfiniteFunModified"))()")
 	end
 end)
 
