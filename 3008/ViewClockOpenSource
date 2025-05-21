@@ -1,0 +1,15 @@
+local RS = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local TimeLeftValue = RS.ServerSettings.TimeSettings.TimeLeft
+local ClockText = Players.LocalPlayer.PlayerGui.MainGui.TopBar.Calendar.Gamepass_Clock
+
+local function UpdateClock()
+	local Value = TimeLeftValue.Value
+	local Minutes = math.floor(Value / 60)
+	local Seconds = Value % 60
+    ClockText.Visible = true
+	ClockText.Text = string.format("%d:%02d", Minutes, Seconds)
+end
+
+TimeLeftValue.Changed:Connect(UpdateClock)
+UpdateClock()
