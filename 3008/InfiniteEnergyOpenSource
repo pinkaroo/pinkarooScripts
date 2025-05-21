@@ -1,0 +1,20 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local HumanoidConnection
+
+LocalPlayer.CharacterAdded:Connect(function(Character)
+	local Humanoid = Character:WaitForChild("Humanoid")
+	
+	if HumanoidConnection then
+		HumanoidConnection:Disconnect()
+	end
+	
+	HumanoidConnection = Humanoid:GetAttributeChangedSignal("Energy"):Connect(function()
+		Humanoid:SetAttribute("Energy", 100)
+	end)
+end)
+
+if LocalPlayer.Character then
+	LocalPlayer.CharacterAdded:Wait()
+end
