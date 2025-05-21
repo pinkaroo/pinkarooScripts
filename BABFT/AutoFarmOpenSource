@@ -1,0 +1,105 @@
+local Players = game:GetService("Players")
+local Teams = game:GetService("Teams")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local GoldValue = LocalPlayer:WaitForChild("Data"):WaitForChild("Gold")
+
+getgenv().Environment = getgenv().Environment or {}
+local Env = getgenv().Environment
+
+if Env.Running then
+    Env.Exit()
+    return
+end
+
+function Env.Start()
+    if Env.Running then
+        Env.Exit()
+        return
+    end
+
+    Env.Running = true
+    Env.Thread = task.spawn(function()
+        local TotalGoldGained = 0
+        RunService:Set3dRenderingEnabled(false)
+
+        while Env.Running do
+            local Stages = {}
+
+            for _, Stage in pairs(workspace.BoatStages.NormalStages:GetChildren()) do
+                if Stage.Name ~= "CaveStage10" and Stage:FindFirstChild("DarknessPart") and Stage.Name:match("CaveStage%d+") then
+                    local StageNumber = tonumber(Stage.Name:match("%d+"))
+                    if StageNumber then
+                        table.insert(Stages, {Stage = Stage, Number = StageNumber})
+                    end
+                end
+            end
+
+            table.sort(Stages, function(a, b)
+                return a.Number < b.Number
+            end)
+
+            for _, Entry in pairs(Stages) do
+                if not Env.Running then break end
+
+                local Stage = Entry.Stage
+                local OldGold = GoldValue.Value
+                local OldTime = tick()
+
+                repeat
+                    task.wait()
+                    LocalPlayer.Character:PivotTo(Stage.DarknessPart:GetPivot())
+                    LocalPlayer.Character:WaitForChild("HumanoidRootPart").AssemblyLinearVelocity = Vector3.zero
+                    workspace.ClaimRiverResultsGold:FireServer()
+                until GoldValue.Value > OldGold or tick() - OldTime >= 10 or not Env.Running
+
+                local Gained = GoldValue.Value - OldGold
+                if Gained > 0 then
+                    TotalGoldGained += Gained
+                    print("Total Gold Gained: " .. TotalGoldGained)
+                end
+            end
+
+            if not Env.Running then break end
+
+            local OldCharacter = LocalPlayer.Character
+
+            local Switched = false
+            for _, Team in pairs(Teams:GetChildren()) do
+                local HasLocalPlayer = false
+                for _, OtherPlayer in pairs(Players:GetPlayers()) do
+                    if OtherPlayer.Team == Team then
+                        HasLocalPlayer = true
+                        break
+                    end
+                end
+
+                if not HasLocalPlayer then
+                    workspace:WaitForChild("ChangeTeam"):FireServer(Team)
+                    Switched = true
+                    break
+                end
+            end
+
+            if not Switched then
+                LocalPlayer.Character.Humanoid.Health = 0
+                repeat task.wait() until LocalPlayer.Character ~= OldCharacter or not Env.Running
+            else
+                repeat task.wait() until LocalPlayer.Character ~= OldCharacter or not Env.Running
+            end
+
+            task.wait(1)
+        end
+    end)
+end
+
+function Env.Exit()
+    Env.Running = false
+    if Env.Thread then
+        task.cancel(Env.Thread)
+    end
+    RunService:Set3dRenderingEnabled(true)
+end
+
+Env.Start()
