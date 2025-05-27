@@ -2234,9 +2234,9 @@ function DiscordLib:Window(text)
 				Icon.Size = UDim2.new(0, 13, 0, 13)
 				Icon.Image = "http://www.roblox.com/asset/?id=6035047409"
 				Icon.ImageColor3 = Color3.fromRGB(114, 118, 125)
-
-        local function Toggle()
-          if toggled == false then
+				
+				Toggle.MouseButton1Click:Connect(function()
+					if toggled == false then
 						TweenService:Create(
 							Icon,
 							TweenInfo.new(.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
@@ -2290,11 +2290,6 @@ function DiscordLib:Window(text)
 				end)
 				
 				ChannelHolder.CanvasSize = UDim2.new(0,0,0,ChannelHolderLayout.AbsoluteContentSize.Y)
-        end
-
-        if default then Toggle()
-
-				Toggle.MouseButton1Click:Connect(Toggle)
 			end
 			
 			function ChannelContent:Slider(text, min, max, start, callback)
