@@ -53,7 +53,7 @@ local function check_hitbox()
             for _, part in ipairs(touching) do
                 if part == hrp then
                     return v
-                endf
+                end
             end
         end
     end
