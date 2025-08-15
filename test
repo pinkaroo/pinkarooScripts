@@ -60,9 +60,9 @@ local function check_hitbox()
 end
 
 local function get_floor_level(y)
-    if y >= -7 and y < 12.8 then
+    if y >= -7 and y < 11 then
         return 1
-    elseif y >= 12.8 and y < 29.8 then
+    elseif y >= 11 and y < 29.8 then
         return 2
     elseif y >= 29.8 and y <= 40 then
         return 3
