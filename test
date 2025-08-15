@@ -22,21 +22,28 @@ local enabled = false
 local target_pos = nil
 local speed = 140
 
-local function move_to(pos)
-	target_pos = pos
-	while target_pos do
-		local dir = (target_pos - hrp.Position)
-		if dir.Magnitude < 2 then
-			target_pos = nil
-			break
-		end
-		hrp.AssemblyLinearVelocity = dir.Unit * speed
-		run_service.RenderStepped:Wait()
-	end
-	hrp.AssemblyLinearVelocity = Vector3.zero
-end
+local function move_to(pos, use_tool)
+    target_pos = pos
+    while target_pos do
+        local dir = (target_pos - hrp.Position)
+        if dir.Magnitude < 2 then
+            target_pos = nil
+            break
+        end
+        hrp.AssemblyLinearVelocity = dir.Unit * speed
 
-local function check_hitbox()
+        if use_tool then
+            if lp.Backpack:FindFirstChild("Grapple Hook") then
+                lp.Backpack["Grapple Hook"].Parent = lp.Character
+            end
+            rs.Packages.Net:FindFirstChild("RE/UseItem"):FireServer(1)
+        end
+
+        run_service.RenderStepped:Wait()
+    end
+    hrp.AssemblyLinearVelocity = Vector3.zero
+end
+tion check_hitbox()
 	for _, v in ipairs(workspace:GetDescendants()) do
 		if v.Name == "StealHitbox" and v:IsA("BasePart") then
 			local touching = workspace:GetPartsInPart(v)
