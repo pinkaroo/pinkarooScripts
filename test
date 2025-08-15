@@ -1,0 +1,122 @@
+local players = game:GetService("Players")
+local run_service = game:GetService("RunService")
+local uis = game:GetService("UserInputService")
+local workspace = game:GetService("Workspace")
+local rs = game:GetService("ReplicatedStorage")
+
+local lp = players.LocalPlayer
+local char = lp.Character or lp.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+local hum = char:WaitForChild("Humanoid")
+
+local own_base
+for _, g in pairs(workspace.Plots:GetChildren()) do
+	if g:FindFirstChild("PlotSign") and g.PlotSign.YourBase.Enabled then
+		own_base = g
+		break
+	end
+end
+
+local moving = false
+local enabled = false
+local target_pos = nil
+local speed = 140
+
+local function move_to(pos)
+	target_pos = pos
+	while target_pos do
+		local dir = (target_pos - hrp.Position)
+		if dir.Magnitude < 2 then
+			target_pos = nil
+			break
+		end
+		hrp.AssemblyLinearVelocity = dir.Unit * speed
+		run_service.RenderStepped:Wait()
+	end
+	hrp.AssemblyLinearVelocity = Vector3.zero
+end
+
+local function check_hitbox()
+	for _, v in ipairs(workspace:GetDescendants()) do
+		if v.Name == "StealHitbox" and v:IsA("BasePart") then
+			local touching = workspace:GetPartsInPart(v)
+			for _, part in ipairs(touching) do
+				if part == hrp then
+					return v
+				end
+			end
+		end
+	end
+end
+
+
+local function get_floor_level(y)
+	if y >= -7 and y < 12.8 then
+		return 1
+	elseif y >= 12.8 and y < 29.8 then
+		return 2
+	elseif y >= 29.8 and y <= 40 then
+		return 3
+	end
+	return nil
+end
+
+local function do_delivery(hitbox)
+	local delivery_target = hitbox.Parent:FindFirstChild("DeliveryHitbox")
+	local laser_hitbox = hitbox.Parent:FindFirstChild("LaserHitbox")
+	if not delivery_target or not laser_hitbox then return end
+
+	local floor = get_floor_level(hrp.Position.Y)
+	if not floor then return end
+
+	if floor == 3 then
+		local third = laser_hitbox:FindFirstChild("ThirdFloor")
+		local second = laser_hitbox:FindFirstChild("SecondFloor")
+		if third and second then
+			move_to(third.Position + Vector3.new(0, 3, 0))
+			move_to(Vector3.new(third.Position.X, 20, third.Position.Z))
+			move_to(second.Position)
+			move_to(own_base.DeliveryHitbox.Position)
+		end
+	elseif floor == 2 then
+		local second = laser_hitbox:FindFirstChild("SecondFloor")
+		if second then
+			move_to(second.Position)
+			move_to(own_base.DeliveryHitbox.Position)
+		end
+	else
+		move_to(own_base.DeliveryHitbox.Position)
+	end
+end
+
+
+local function try_delivery()
+	local attempts = 0
+	while attempts < 3 do
+		local hitbox = check_hitbox()
+		if hitbox then
+			do_delivery(hitbox)
+			return
+		end
+		attempts += 1
+		task.wait(0.5)
+	end
+end
+
+uis.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.F then
+		enabled = not enabled
+	end
+end)
+
+run_service.RenderStepped:Connect(function()
+	if enabled and not moving then
+		local hitbox = check_hitbox()
+		if hitbox then
+			moving = true
+			try_delivery()
+			moving = false
+		end
+	end
+end)
