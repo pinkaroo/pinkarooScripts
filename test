@@ -26,6 +26,7 @@ local function equip_grapple()
     if tool then
         tool.Parent = lp.Character
         task.wait()
+        rs.Packages.Net:FindFirstChild("RE/UseItem"):FireServer(1)
     end
 end
 
@@ -34,13 +35,6 @@ local function move_to(pos)
         local dir = (pos - hrp.Position).Unit
         hrp.AssemblyLinearVelocity = dir * speed
         hum:ChangeState(Enum.HumanoidStateType.Physics)
-
-        local tool = lp.Character:FindFirstChild("Grapple Hook") or lp.Backpack:FindFirstChild("Grapple Hook")
-        if tool then
-            tool.Parent = lp.Character
-            rs.Packages.Net:FindFirstChild("RE/UseItem"):FireServer(1)
-        end
-
         run_service.RenderStepped:Wait()
     end
     hrp.AssemblyLinearVelocity = Vector3.zero
@@ -60,14 +54,13 @@ local function check_hitbox()
 end
 
 local function get_floor_level(y)
-    if y >= -7 and y < 11 then
+    if y < 12 then
         return 1
-    elseif y >= 11 and y < 29.8 then
+    elseif y < 30 then
         return 2
-    elseif y >= 29.8 and y <= 40 then
+    else
         return 3
     end
-    return nil
 end
 
 local function do_delivery(hitbox)
@@ -76,7 +69,6 @@ local function do_delivery(hitbox)
     if not delivery_target or not laser_hitbox then return end
 
     equip_grapple()
-    rs.Packages.Net:FindFirstChild("RE/UseItem"):FireServer(1)
 
     local floor = get_floor_level(hrp.Position.Y)
     if not floor then return end
@@ -86,8 +78,8 @@ local function do_delivery(hitbox)
         local right = lv:Cross(Vector3.new(0,1,0)).Unit
         return part.Position + right * offset
     end
-	
-	print(floor)
+
+    print("Current floor:", floor)
 
     if floor == 3 then
         local third = laser_hitbox:FindFirstChild("ThirdFloor")
