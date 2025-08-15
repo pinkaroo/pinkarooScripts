@@ -34,6 +34,13 @@ local function move_to(pos)
         local dir = (pos - hrp.Position).Unit
         hrp.AssemblyLinearVelocity = dir * speed
         hum:ChangeState(Enum.HumanoidStateType.Physics)
+
+        local tool = lp.Character:FindFirstChild("Grapple Hook") or lp.Backpack:FindFirstChild("Grapple Hook")
+        if tool then
+            tool.Parent = lp.Character
+            rs.Packages.Net:FindFirstChild("RE/UseItem"):FireServer(1)
+        end
+
         run_service.RenderStepped:Wait()
     end
     hrp.AssemblyLinearVelocity = Vector3.zero
