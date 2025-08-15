@@ -81,19 +81,25 @@ local function do_delivery(hitbox)
     local floor = get_floor_level(hrp.Position.Y)
     if not floor then return end
 
+    local function get_offset_position(part, offset)
+        local lv = part.CFrame.LookVector
+        local right = lv:Cross(Vector3.new(0,1,0)).Unit
+        return part.Position + right * offset
+    end
+
     if floor == 3 then
         local third = laser_hitbox:FindFirstChild("ThirdFloor")
         local second = laser_hitbox:FindFirstChild("SecondFloor")
         if third and second then
-            move_to(third.Position + Vector3.new(0,3,0))
+            move_to(get_offset_position(third, -3) + Vector3.new(0,3,0))
             move_to(Vector3.new(third.Position.X,20,third.Position.Z))
-            move_to(second.Position)
+            move_to(get_offset_position(second, -3))
             move_to(own_base.DeliveryHitbox.Position)
         end
     elseif floor == 2 then
         local second = laser_hitbox:FindFirstChild("SecondFloor")
         if second then
-            move_to(second.Position)
+            move_to(get_offset_position(second, -3))
             move_to(own_base.DeliveryHitbox.Position)
         end
     else
