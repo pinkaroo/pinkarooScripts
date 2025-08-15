@@ -53,7 +53,7 @@ local function check_hitbox()
             for _, part in ipairs(touching) do
                 if part == hrp then
                     return v
-                end
+                endf
             end
         end
     end
@@ -86,6 +86,8 @@ local function do_delivery(hitbox)
         local right = lv:Cross(Vector3.new(0,1,0)).Unit
         return part.Position + right * offset
     end
+	
+	print(floor)
 
     if floor == 3 then
         local third = laser_hitbox:FindFirstChild("ThirdFloor")
