@@ -63,10 +63,6 @@ end
 local BestBrainrot = GetBestBrainrots()[1]
 
 if BestBrainrot and BestBrainrot.Actor then
-    if sethiddenproperty then
-        sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
-    end
-
     StealRemote:FireServer(workspace:GetServerTimeNow()+62, "b3505eaa-0def-479d-9f39-489ac03fa81e") -- Start "Holding" NEEDS 1.5 MINIMUM
     
     local StealPrompt
