@@ -1,337 +1,126 @@
-cloneref = cloneref or function(a) return a end
-
---// SERVICES --\\
-
-local ProximityPromptService = cloneref(game:GetService("ProximityPromptService"))
-local PathfindingService = cloneref(game:GetService("PathfindingService"))
-local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
-local Players = cloneref(game:GetService("Players"))
-
-local Plots = cloneref(workspace:WaitForChild("Plots", 9e9))
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
 
---// MODULES --\\
+local StealRemote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/22f715d7-f287-4bbf-96d5-fb14e461dd75")
+
+local Plots = workspace:WaitForChild("Plots", 9e9)
 
 local PlotController = require(ReplicatedStorage.Controllers.PlotController)
+
 local PlayerBase = PlotController.GetMyPlot().PlotModel
 
+local ConvertToNumber = function(str)
+    local NumStr = str:gsub("%$", ""):gsub("/s", "")
 
---// EVENTS USED --\\
+    local Multiplier = 1
+    if NumStr:find("K") then
+        Multiplier = 1e3
+    elseif NumStr:find("M") then
+        Multiplier = 1e6
+    elseif NumStr:find("B") then
+        Multiplier = 1e9
+    elseif NumStr:find("T") then
+        Multiplier = 1e12
+    end
 
-local UseItem = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/AdminPanelService/ExecuteCommand")
+    NumStr = NumStr:gsub("[KMBT]", "")
 
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local Number = tonumber(NumStr)
+    if Number then
+        return Number * Multiplier
+    end
 
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart", 9e9)
-
-local Path = PathfindingService:CreatePath({
-	AgentRadius = 6,
-	AgentHeight = 5.2,
-	AgentCanJump = true,
-	AgentJumpHeight = 0,
-	WaypointSpacing = 90,
-})
-
-local PathFinderFix = game:GetObjects("rbxassetid://71395935740464")[1]
-
-if not PlayerBase then
-	return warn("No base found...")
+    return 0
 end
 
+local GetBestBrainrots = function()
+    local BestBrainrots = {}
 
-local TargetPos = PlayerBase.AnimalTarget.Position
+    for _, v in pairs(Plots:GetDescendants()) do
+        if not v:IsDescendantOf(PlayerBase) and v.Name == "Generation" and v:IsA("TextLabel") and v.Parent:IsA("BillboardGui") then
+            local Amount = ConvertToNumber(v.Text)
 
-local TargetPosEnd = (PlayerBase.FriendPanel.Main.CFrame * CFrame.new(5.1, 0, 1)).p
+            table.insert(BestBrainrots, {
+                Name = v.Parent.DisplayName.Text,
+                Spawn = v.Parent.Parent.Parent,
+                Label = v,
+                Actor = v.Parent.Parent.Parent.Parent.Parent.Parent.Parent:FindFirstChild(v.Parent.DisplayName.Text),
+                Amount = Amount,
+                RealAmount = v.Text
+            })
+        end
+    end
 
-LocalPlayer.CharacterAdded:Connect(function(New)
-	Character = New
-	HumanoidRootPart = Character:WaitForChild("HumanoidRootPart", 9e9)
-end)
+    table.sort(BestBrainrots, function(a, b)
+        return a.Amount > b.Amount
+    end)
 
-local function SlideTo(TargetPos, Speed, RootPart, BodyGyro, BodyVelocity, DoOffset)
-	if DoOffset == nil then
-		DoOffset = true
-	end
-
-	Speed = Speed or 165
-
-	local StartPos = RootPart.Position
-
-	TargetPos = TargetPos + (DoOffset and Vector3.new(0,8,0) or Vector3.new(0,0,0))
-
-	local Dir = (TargetPos - StartPos)
-	local Distance = Dir.Magnitude
-	local UnitDir = Dir.Unit
-
-	BodyGyro.CFrame = CFrame.lookAt(RootPart.Position, TargetPos)
-	BodyVelocity.Velocity = UnitDir * Speed
-
-	local StartTime = tick()
-	repeat
-		RootPart.AssemblyLinearVelocity = Vector3.zero
-		task.wait()
-		local Traveled = (RootPart.Position - StartPos)
-		if Traveled:Dot(UnitDir) >= Distance then
-			break
-		end
-		
-		if os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3) >= 3 then
-			warn("Main Loop Break", os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3))
-			break
-		end
-	until tick() - StartTime > 2
+    return BestBrainrots
 end
 
-local function VisualizeWaypoints(waypoints)
-	for _, waypoint in ipairs(waypoints) do
-		local part = Instance.new("Part")
-		part.Size = Vector3.new(1, 1, 1)
-		part.Shape = Enum.PartType.Ball
-		part.Anchored = true
-		part.CanCollide = false
-		part.Material = Enum.Material.Neon
-		part.Color = Color3.fromRGB(0, 255, 0)
+local BestBrainrot = GetBestBrainrots()[1]
 
-		if waypoint.Action == Enum.PathWaypointAction.Jump then
-			part.Color = Color3.fromRGB(255, 255, 0)
-		end
+if BestBrainrot and BestBrainrot.Actor then
+    setsimulationradius(math.huge)
 
-		part.Position = waypoint.Position + Vector3.new(0, 2, 0)
-		part.Parent = workspace
-
-		game:GetService("Debris"):AddItem(part, 8)
-	end
+    StealRemote:FireServer(workspace:GetServerTimeNow()+62, "b3505eaa-0def-479d-9f39-489ac03fa81e") -- Start "Holding" NEEDS 1.5 MINIMUM
+    
+    local StealPrompt
+    for i,v in pairs(BestBrainrot.Spawn.PromptAttachment:GetChildren()) do
+        if v:IsA("ProximityPrompt") and v.ActionText == "Steal" then
+            StealPrompt = v
+            break
+        end
+    end
+    
+    local Tool = LocalPlayer.Backpack:FindFirstChild("Quantum Cloner") or LocalPlayer.Character:FindFirstChild("Quantum Cloner")
+    
+    if not Tool then
+        warn("No tool bro")
+        return
+    end
+    
+    if workspace:FindFirstChild(LocalPlayer.UserId .. "_Clone") then
+        workspace:FindFirstChild(LocalPlayer.UserId .. "_Clone"):Destroy()
+    end
+    
+    LocalPlayer.Character.Humanoid:EquipTool(Tool)
+    
+    wait() -- Slow wait    
+    
+    ReplicatedStorage.Packages.Net["RE/UseItem"]:FireServer()
+    
+    local Clone = workspace:FindFirstChild(LocalPlayer.UserId .. "_Clone")
+    
+    while not Clone do
+        ReplicatedStorage.Packages.Net["RE/UseItem"]:FireServer()
+        task.wait()
+        
+        Clone = workspace:FindFirstChild(LocalPlayer.UserId .. "_Clone")
+    end
+    
+    wait(.5)
+    
+    Clone:PivotTo(BestBrainrot.Spawn.CFrame)
+    
+    wait(.5)
+    
+    ReplicatedStorage.Packages.Net["RE/QuantumCloner/OnTeleport"]:FireServer()
+    
+    local ClonePos = Clone.HumanoidRootPart.Position
+    
+    local Start = tick()
+    
+    while (LocalPlayer.Character.HumanoidRootPart.Position - ClonePos).Magnitude > 15 and tick() - Start < 2 do
+        Clone:PivotTo(BestBrainrot.Spawn.CFrame)
+        task.wait()
+    end
+    
+    if tick() - Start > 2 then
+        return warn("Failed to TP")
+    end
+    wait(.2)
+    fireproximityprompt(StealPrompt)
 end
-
-local function CleanWaypoints(Waypoints, MinDist)
-	local Cleaned = {}
-	local LastPos = nil
-
-	for _, Waypoint in ipairs(Waypoints) do
-		local Action = Waypoint.Action
-
-		if LastPos then
-			local YDiff = math.abs(Waypoint.Position.Y - LastPos.Y)
-			if Action == Enum.PathWaypointAction.Jump and YDiff < 3 then
-				Action = Enum.PathWaypointAction.Walk
-			end
-		end
-
-		if not LastPos or (Waypoint.Position - LastPos).Magnitude > (MinDist or 2) then
-			table.insert(Cleaned, {
-				Position = Waypoint.Position,
-				Action = Action
-			})
-			LastPos = Waypoint.Position
-		end
-	end
-
-	return Cleaned
-end
-
-
-local d = false
-
-ProximityPromptService.PromptTriggered:Connect(function(Prompt, Player)
-	if d then return end; d = true
-	local PromptAncestor = Prompt:FindFirstAncestorWhichIsA("Folder")
-
-	local TargetBase = PromptAncestor.Parent
-	local LaserHitbox = TargetBase:FindFirstChild("LaserHitbox")
-	local AnimalTarget = TargetBase:FindFirstChild("AnimalTarget")
-
-	if TargetBase == PlayerBase then
-		return
-	end
-
-	if Prompt:IsDescendantOf(Plots) and Player == LocalPlayer and PromptAncestor and PromptAncestor.Name == "AnimalPodiums" then
-		if not AnimalTarget or not LaserHitbox then
-			return warn("No AnimalTarget/LaserHitbox")
-		end
-		
-		local BaseLaser = nil
-		
-		for i,v in pairs(TargetBase.Laser:GetDescendants()) do
-			if v:IsA("BasePart") and v.Color == Color3.fromRGB(255, 0, 0) then
-				BaseLaser = v
-				break
-			end
-		end
-		
-		if not BaseLaser then
-			return warn("wtf? no laser")
-		end
-
-		UseItem:FireServer(LocalPlayer, "ragdoll")
-		
-		local WaitStart = tick()
-		
-		if not LocalPlayer:GetAttribute("RagdollEndTime") or os.time() - LocalPlayer:GetAttribute("RagdollEndTime") >= 3 then
-			LocalPlayer:SetAttribute("RagdollEndTime", os.time())
-			--warn("Set attribute heh", os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3.6420))
-		end
-		
-		while BaseLaser.Transparency ~= 1 and LaserHitbox.Main.CanCollide do
-			if os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3.6420) >= 2.1 then
-				warn("Laser no time", os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3.6420))
-				break
-			end
-			
-			task.wait()
-		end
-		
-		if BaseLaser.Transparency ~= 1 and LaserHitbox.Main.CanCollide then
-			return
-		end
-		
-		PathFinderFix.Parent = workspace
-		task.delay(5, function()
-			PathFinderFix.Parent = nil
-		end)
-		
-		local BodyVelocity = Instance.new("BodyVelocity")
-		local BodyGyro = Instance.new("BodyGyro")
-
-		local RootPart = Character.PrimaryPart
-
-		BodyGyro.MaxTorque = Vector3.new(2e5, 2e5, 2e5)
-		BodyGyro.P = 3e5
-		BodyGyro.Parent = RootPart
-
-		BodyVelocity.MaxForce = Vector3.new(2e5, 2e5, 2e5)
-		BodyVelocity.Parent = RootPart
-
-		local Conn = Character.Humanoid.Died:Once(function()
-			BodyVelocity:Destroy()
-			BodyGyro:Destroy()
-			PathFinderFix.Parent = nil
-		end)
-
-		if RootPart.CFrame.Y > 8 and RootPart.CFrame.Y < 15 and LaserHitbox:FindFirstChild("SecondFloor") then
-			local Node = LaserHitbox:FindFirstChild("SecondFloor")
-
-			local NodePos = (Node.CFrame * CFrame.new(-5.1, 0, 1))
-			local Node2Pos = (NodePos * CFrame.new(0,-45,15)).p
-			
-			NodePos = NodePos.p
-			
-			Path:ComputeAsync(RootPart.Position, NodePos)
-
-			if Path.Status == Enum.PathStatus.Success then
-				local Waypoints = Path:GetWaypoints()
-				
-				VisualizeWaypoints(Waypoints)
-
-				for _, Waypoint in ipairs(Waypoints) do
-					SlideTo(Waypoint.Position, 250, RootPart, BodyGyro, BodyVelocity)
-					if os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3) >= 3 then
-						warn("2nd Waypoint Loop Break", os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3.69420))
-						break
-					end
-				end
-			else
-				SlideTo(NodePos, 355, RootPart, BodyGyro, BodyVelocity, false)
-				warn("2nd floor pathfind fail")
-			end
-			
-			SlideTo(Node2Pos, 355, RootPart, BodyGyro, BodyVelocity, false)
-
-			AnimalTarget = HumanoidRootPart
-			task.wait()
-		end
-
-		Path:ComputeAsync(AnimalTarget.Position, TargetPos)
-
-		if Path.Status == Enum.PathStatus.Success then
-			PlayerBase.DeliveryHitbox.CanQuery = false -- Bypass kick!!
-
-			Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-
-			local Waypoints = Path:GetWaypoints()
-			
-			Waypoints = CleanWaypoints(Waypoints, 0)
-			
-			VisualizeWaypoints(Waypoints)
-
-			for _, Waypoint in ipairs(Waypoints) do
-				SlideTo(Waypoint.Position, 325, RootPart, BodyGyro, BodyVelocity)
-				if os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3) >= 3 then
-					warn("Waypoint Loop Break", os.time() - (LocalPlayer:GetAttribute("RagdollEndTime") or os.time()-3.69420))
-					break
-				end
-			end
-
-			SlideTo(TargetPosEnd, 395, RootPart, BodyGyro, BodyVelocity)
-
-			Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-
-			for i = 1,3 do
-				BodyVelocity.Velocity = Vector3.zero
-				HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-				HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-				wait(.12)
-			end
-
-			if Conn then
-				Conn:Disconnect()
-			end
-
-			BodyGyro:Destroy()
-			BodyVelocity:Destroy()
-			PathFinderFix.Parent = nil
-
-			PlayerBase.DeliveryHitbox.CanQuery = true
-		else
-			if Conn then
-				Conn:Disconnect()
-			end
-
-			PathFinderFix.Parent = nil
-			BodyVelocity:Destroy()
-			BodyGyro:Destroy()
-			warn("Pathfinding failed!")
-		end
-	end
-end)
-
-local Hooked = false
-
-for _, v in pairs(getgc(true)) do
-	if typeof(v) == "table" then
-		local Function = rawget(v, "observeTag")
-		if typeof(Function) == "function" and not Hooked then
-			Hooked = true
-			hookfunction(Function, newcclosure(function(_, _)
-				return {
-					Disconnect = function() end,
-					disconnect = function() end
-				}
-			end))
-		end
-	end
-end
-
-function DisableACChar(Character)
-	local Got = false
-	while not Got do
-		for i,v in pairs(getconnections(Character.DescendantAdded)) do
-			if v.Function then
-				if debug.info(v.Function, "s"):find("ReplicatedFirst") then
-					Got = true
-					hookfunction(v.Function, function()
-
-					end)
-				end
-			end
-		end
-
-		wait(0.1)
-	end
-end
-
-DisableACChar(Character)
-
-LocalPlayer.CharacterAdded:Connect(DisableACChar)
-
-warn("Activated.")
