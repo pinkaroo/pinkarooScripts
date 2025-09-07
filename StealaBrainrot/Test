@@ -64,7 +64,6 @@ local BestBrainrot = GetBestBrainrots()[1]
 
 if BestBrainrot and BestBrainrot.Actor then
     if sethiddenproperty then
-        sethiddenproperty(LocalPlayer, "MaximumSimulationRadius", math.huge)
         sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
     end
 
