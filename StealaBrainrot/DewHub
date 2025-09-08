@@ -94,7 +94,7 @@ local teleport_button = Instance.new("TextButton")
 teleport_button.Size = UDim2.new(1, -20, 0, 40)
 teleport_button.Position = UDim2.new(0, 10, 0, 100)
 teleport_button.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-teleport_button.Text = "Teleport to Best Brainrot"
+teleport_button.Text = "Teleport to Best Brainrot (PATCHED)"
 teleport_button.TextColor3 = Color3.fromRGB(0, 0, 0)
 teleport_button.TextSize = 16
 teleport_button.Font = Enum.Font.Gotham
@@ -217,7 +217,7 @@ local function toggle_invis_steal()
             end
             repeat task.wait() until player:GetAttribute("Stealing")
             replicatesignal(player.Character.Humanoid.ServerBreakJoints)
-            player.Character:PivotTo(player.Character.PrimaryPart.CFrame * CFrame.new(0, 200, 0))
+            player.Character:PivotTo(player.Character.PrimaryPart.CFrame * CFrame.new(0, -99, 0))
         end)
     elseif not toggle_state and invis_steal_connection then
         invis_steal_connection:Disconnect()
