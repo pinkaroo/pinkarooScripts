@@ -434,7 +434,7 @@ local function AddPlayerFrame(Player)
 
 	local Thumb = GetThumbnail(Player.UserId)
 	if Thumb then
-		PlayerFrame.ImageLabel.Image = Thumb
+		PlayerFrame.User.Image = Thumb
 	end
 
 	PlayerFrame.Bounds.MouseButton1Click:Connect(function()
