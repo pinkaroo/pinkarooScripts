@@ -434,7 +434,6 @@ local function AddPlayerFrame(Player)
 
 	local Thumb = GetThumbnail(Player.UserId)
 	if Thumb then
-		print(Thumb)
 		PlayerFrame.ImageLabel.Image = Thumb
 	end
 
